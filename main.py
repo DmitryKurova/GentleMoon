@@ -6,22 +6,19 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
-from kivy.uix.label import Label as RecycleLabel
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.popup import Popup
 from kivy.uix.switch import Switch
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.image import Image
+from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.metrics import dp
 import sqlite3
-import json
 import os
 import hashlib
+import datetime
 import random
 import string
-from datetime import datetime
 
 DB_PATH = 'gentlemoon.db'
 Window.size = (400, 700)
@@ -100,7 +97,7 @@ class Database:
             caption TEXT,
             created_at TEXT,
             FOREIGN KEY(user_id) REFERENCES users(id)
-        )'')
+        )''')
         self.conn.commit()
     
     def close(self):
@@ -115,8 +112,12 @@ class TOSScreen(Screen):
         
         logo_layout = BoxLayout(size_hint_y=None, height=100)
         try:
-            logo = Image(source='gentlemoonlogo.png', size_hint=(None, None), size=(80, 80))
-            logo_layout.add_widget(logo)
+            if os.path.exists('gentlemoonlogo.png'):
+                from kivy.uix.image import Image
+                logo = Image(source='gentlemoonlogo.png', size_hint=(None, None), size=(80, 80))
+                logo_layout.add_widget(logo)
+            else:
+                logo_layout.add_widget(Label(text="🌙", font_size=48))
         except:
             logo_layout.add_widget(Label(text="🌙", font_size=48))
         layout.add_widget(logo_layout)
@@ -168,7 +169,7 @@ By clicking "I AGREE", you accept full responsibility for your use of this app.
     
     def accept_tos(self, instance):
         with open('tos_accepted.txt', 'w') as f:
-            f.write(datetime.now().isoformat())
+            f.write(datetime.datetime.now().isoformat())
         self.manager.current = 'login'
 
 class LoginScreen(Screen):
@@ -176,7 +177,16 @@ class LoginScreen(Screen):
         super().__init__(**kwargs)
         layout = BoxLayout(orientation='vertical', padding=30, spacing=15)
         
-        layout.add_widget(Label(text="🌙 GentleMoon", font_size=40, bold=True, size_hint_y=None, height=80))
+        try:
+            if os.path.exists('gentlemoonlogo.png'):
+                from kivy.uix.image import Image
+                layout.add_widget(Image(source='gentlemoonlogo.png', size_hint=(None, None), size=(100, 100), pos_hint={'center_x': 0.5}))
+            else:
+                layout.add_widget(Label(text="🌙", font_size=48))
+        except:
+            layout.add_widget(Label(text="🌙", font_size=48))
+        
+        layout.add_widget(Label(text="GentleMoon", font_size=40, bold=True, size_hint_y=None, height=80))
         
         self.username = TextInput(hint_text="Username", multiline=False, size_hint_y=None, height=50)
         layout.add_widget(self.username)
@@ -290,99 +300,6 @@ class RegisterScreen(Screen):
         popup = Popup(title=title, content=Label(text=message), size_hint=(0.7, 0.4))
         popup.open()
 
-class SettingsScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.build_ui()
-    
-    def build_ui(self):
-        layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
-        layout.clear_widgets()
-        
-        layout.add_widget(Label(text="⚙️ Settings", font_size=28, size_hint_y=None, height=50))
-        
-        theme_layout = BoxLayout(size_hint_y=None, height=50)
-        theme_layout.add_widget(Label(text="Dark Mode:"))
-        self.theme_switch = Switch(active=App.get_running_app().current_theme == 'dark')
-        self.theme_switch.bind(active=self.toggle_theme)
-        theme_layout.add_widget(self.theme_switch)
-        layout.add_widget(theme_layout)
-        
-        layout.add_widget(Label(text="Account", font_size=20, bold=True, size_hint_y=None, height=40))
-        
-        self.username_display = Label(text=f"Username: {App.get_running_app().current_username}", size_hint_y=None, height=40)
-        layout.add_widget(self.username_display)
-        
-        change_user_layout = BoxLayout(size_hint_y=None, height=50)
-        self.new_username = TextInput(hint_text="New username", multiline=False)
-        change_user_layout.add_widget(self.new_username)
-        change_btn = Button(text="Change", size_hint_x=0.3)
-        change_btn.bind(on_press=self.change_username)
-        change_user_layout.add_widget(change_btn)
-        layout.add_widget(change_user_layout)
-        
-        change_pass_layout = BoxLayout(size_hint_y=None, height=50)
-        self.new_password = TextInput(hint_text="New password", password=True, multiline=False)
-        change_pass_layout.add_widget(self.new_password)
-        change_pass_btn = Button(text="Change Pass", size_hint_x=0.3)
-        change_pass_btn.bind(on_press=self.change_password)
-        change_pass_layout.add_widget(change_pass_btn)
-        layout.add_widget(change_pass_layout)
-        
-        key_info = db.cursor.execute("SELECT public_key FROM users WHERE id=?", (App.get_running_app().current_user_id,)).fetchone()
-        if key_info:
-            layout.add_widget(Label(text=f"Your Key: {key_info[0][:12]}...", size_hint_y=None, height=40))
-        
-        layout.add_widget(Label(text="", size_hint_y=None, height=20))
-        
-        logout_btn = Button(text="Logout", size_hint_y=None, height=50, background_color=(0.8, 0.2, 0.2, 1))
-        logout_btn.bind(on_press=self.logout)
-        layout.add_widget(logout_btn)
-        
-        scroll = ScrollView()
-        scroll.add_widget(layout)
-        self.add_widget(scroll)
-    
-    def toggle_theme(self, instance, value):
-        theme = 'dark' if value else 'light'
-        App.get_running_app().apply_theme(theme)
-        db.cursor.execute("UPDATE users SET theme=? WHERE id=?", (theme, App.get_running_app().current_user_id))
-        db.conn.commit()
-    
-    def change_username(self, instance):
-        new_name = self.new_username.text.strip()
-        if not new_name:
-            return
-        try:
-            db.cursor.execute("UPDATE users SET username=? WHERE id=?", (new_name, App.get_running_app().current_user_id))
-            db.conn.commit()
-            App.get_running_app().current_username = new_name
-            self.username_display.text = f"Username: {new_name}"
-            self.show_popup("Success", "Username changed")
-        except sqlite3.IntegrityError:
-            self.show_popup("Error", "Username already taken")
-    
-    def change_password(self, instance):
-        new_pass = self.new_password.text.strip()
-        if not new_pass:
-            return
-        password_hash = hashlib.sha256(new_pass.encode()).hexdigest()
-        db.cursor.execute("UPDATE users SET password_hash=? WHERE id=?", (password_hash, App.get_running_app().current_user_id))
-        db.conn.commit()
-        self.show_popup("Success", "Password changed")
-    
-    def logout(self, instance):
-        App.get_running_app().current_user_id = None
-        App.get_running_app().current_username = None
-        self.manager.current = 'login'
-    
-    def on_enter(self):
-        self.build_ui()
-    
-    def show_popup(self, title, message):
-        popup = Popup(title=title, content=Label(text=message), size_hint=(0.7, 0.4))
-        popup.open()
-
 class GroupListScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -466,7 +383,7 @@ class GroupListScreen(Screen):
                 group = db.cursor.fetchone()
                 if group:
                     db.cursor.execute("INSERT OR IGNORE INTO group_members (group_id, user_id, joined_at) VALUES (?, ?, ?)",
-                                      (group[0], App.get_running_app().current_user_id, datetime.now().isoformat()))
+                                      (group[0], App.get_running_app().current_user_id, datetime.datetime.now().isoformat()))
                     db.conn.commit()
                     popup.dismiss()
                     self.show_popup("Success", f"Joined {group[1]}")
@@ -556,11 +473,11 @@ class CreateGroupScreen(Screen):
         try:
             db.cursor.execute('''INSERT INTO groups (name, description, creator_id, is_public, join_key, created_at)
                                   VALUES (?, ?, ?, ?, ?, ?)''',
-                              (name, desc, App.get_running_app().current_user_id, is_public, join_key, datetime.now().isoformat()))
+                              (name, desc, App.get_running_app().current_user_id, is_public, join_key, datetime.datetime.now().isoformat()))
             db.conn.commit()
             group_id = db.cursor.lastrowid
             db.cursor.execute("INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, 'admin', ?)",
-                              (group_id, App.get_running_app().current_user_id, datetime.now().isoformat()))
+                              (group_id, App.get_running_app().current_user_id, datetime.datetime.now().isoformat()))
             db.conn.commit()
             self.show_popup("Success", f"Created {name}")
             self.manager.current = 'groups'
@@ -636,7 +553,7 @@ class GroupChatScreen(Screen):
         content = self.message_input.text.strip()
         if content:
             db.cursor.execute("INSERT INTO messages (group_id, sender_id, content, created_at) VALUES (?, ?, ?, ?)",
-                              (self.group_id, App.get_running_app().current_user_id, content, datetime.now().isoformat()))
+                              (self.group_id, App.get_running_app().current_user_id, content, datetime.datetime.now().isoformat()))
             db.conn.commit()
             self.message_input.text = ''
             self.load_messages()
@@ -795,7 +712,7 @@ class DirectChatScreen(Screen):
         content = self.message_input.text.strip()
         if content:
             db.cursor.execute("INSERT INTO direct_messages (sender_id, recipient_id, content, created_at) VALUES (?, ?, ?, ?)",
-                              (App.get_running_app().current_user_id, self.recipient_id, content, datetime.now().isoformat()))
+                              (App.get_running_app().current_user_id, self.recipient_id, content, datetime.datetime.now().isoformat()))
             db.conn.commit()
             self.message_input.text = ''
             self.load_messages()
@@ -880,7 +797,7 @@ class ForumScreen(Screen):
         def submit(instance):
             if content_input.text.strip():
                 db.cursor.execute("INSERT INTO posts (user_id, content, created_at) VALUES (?, ?, ?)",
-                                  (App.get_running_app().current_user_id, content_input.text, datetime.now().isoformat()))
+                                  (App.get_running_app().current_user_id, content_input.text, datetime.datetime.now().isoformat()))
                 db.conn.commit()
                 self.load_posts()
                 popup.dismiss()
@@ -930,9 +847,16 @@ class ReelsScreen(Screen):
         self.load_reels()
     
     def load_reels(self):
-        db.cursor.execute('''SELECT r.id, r.caption, r.created_at, u.username 
-                              FROM reels r JOIN users u ON r.user_id = u.id 
-                              ORDER BY r.created_at DESC''')
+        db.cursor.execute("SELECT r.id, r.caption, r.created_at, u.username FROM reels r JOIN users u ON r.user_id = u.id ORDER BY r.created_at DESC")
+        reels = db.cursor.fetchall()
+        
+        data = []
+        for reel in reels:
+            data.append({
+                'text': f"🎬 {reel[3]}: {reel[1] or 'No caption'}",
+                'time': reel[2][:16]
+            })
+        self.reels_list.data = data
     
     def new_reel(self, instance):
         popup_layout = BoxLayout(orientation='vertical', spacing=10, padding=10)
@@ -951,7 +875,7 @@ class ReelsScreen(Screen):
         def submit(instance):
             if path_input.text.strip():
                 db.cursor.execute("INSERT INTO reels (user_id, video_path, caption, created_at) VALUES (?, ?, ?, ?)",
-                                  (App.get_running_app().current_user_id, path_input.text, caption_input.text, datetime.now().isoformat()))
+                                  (App.get_running_app().current_user_id, path_input.text, caption_input.text, datetime.datetime.now().isoformat()))
                 db.conn.commit()
                 self.load_reels()
                 popup.dismiss()
@@ -977,6 +901,99 @@ class ReelItem(RecycleDataViewBehavior, BoxLayout):
         self.add_widget(Label(text=self.text, size_hint_y=None, height=dp(50)))
         self.add_widget(Label(text=self.time, size_hint_y=None, height=dp(20), font_size=10))
         return super().refresh_view_attrs(rv, index, data)
+
+class SettingsScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.build_ui()
+    
+    def build_ui(self):
+        layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
+        layout.clear_widgets()
+        
+        layout.add_widget(Label(text="⚙️ Settings", font_size=28, size_hint_y=None, height=50))
+        
+        theme_layout = BoxLayout(size_hint_y=None, height=50)
+        theme_layout.add_widget(Label(text="Dark Mode:"))
+        self.theme_switch = Switch(active=App.get_running_app().current_theme == 'dark')
+        self.theme_switch.bind(active=self.toggle_theme)
+        theme_layout.add_widget(self.theme_switch)
+        layout.add_widget(theme_layout)
+        
+        layout.add_widget(Label(text="Account", font_size=20, bold=True, size_hint_y=None, height=40))
+        
+        self.username_display = Label(text=f"Username: {App.get_running_app().current_username}", size_hint_y=None, height=40)
+        layout.add_widget(self.username_display)
+        
+        change_user_layout = BoxLayout(size_hint_y=None, height=50)
+        self.new_username = TextInput(hint_text="New username", multiline=False)
+        change_user_layout.add_widget(self.new_username)
+        change_btn = Button(text="Change", size_hint_x=0.3)
+        change_btn.bind(on_press=self.change_username)
+        change_user_layout.add_widget(change_btn)
+        layout.add_widget(change_user_layout)
+        
+        change_pass_layout = BoxLayout(size_hint_y=None, height=50)
+        self.new_password = TextInput(hint_text="New password", password=True, multiline=False)
+        change_pass_layout.add_widget(self.new_password)
+        change_pass_btn = Button(text="Change Pass", size_hint_x=0.3)
+        change_pass_btn.bind(on_press=self.change_password)
+        change_pass_layout.add_widget(change_pass_btn)
+        layout.add_widget(change_pass_layout)
+        
+        key_info = db.cursor.execute("SELECT public_key FROM users WHERE id=?", (App.get_running_app().current_user_id,)).fetchone()
+        if key_info:
+            layout.add_widget(Label(text=f"Your Key: {key_info[0][:12]}...", size_hint_y=None, height=40))
+        
+        layout.add_widget(Label(text="", size_hint_y=None, height=20))
+        
+        logout_btn = Button(text="Logout", size_hint_y=None, height=50, background_color=(0.8, 0.2, 0.2, 1))
+        logout_btn.bind(on_press=self.logout)
+        layout.add_widget(logout_btn)
+        
+        scroll = ScrollView()
+        scroll.add_widget(layout)
+        self.add_widget(scroll)
+    
+    def toggle_theme(self, instance, value):
+        theme = 'dark' if value else 'light'
+        App.get_running_app().apply_theme(theme)
+        db.cursor.execute("UPDATE users SET theme=? WHERE id=?", (theme, App.get_running_app().current_user_id))
+        db.conn.commit()
+    
+    def change_username(self, instance):
+        new_name = self.new_username.text.strip()
+        if not new_name:
+            return
+        try:
+            db.cursor.execute("UPDATE users SET username=? WHERE id=?", (new_name, App.get_running_app().current_user_id))
+            db.conn.commit()
+            App.get_running_app().current_username = new_name
+            self.username_display.text = f"Username: {new_name}"
+            self.show_popup("Success", "Username changed")
+        except sqlite3.IntegrityError:
+            self.show_popup("Error", "Username already taken")
+    
+    def change_password(self, instance):
+        new_pass = self.new_password.text.strip()
+        if not new_pass:
+            return
+        password_hash = hashlib.sha256(new_pass.encode()).hexdigest()
+        db.cursor.execute("UPDATE users SET password_hash=? WHERE id=?", (password_hash, App.get_running_app().current_user_id))
+        db.conn.commit()
+        self.show_popup("Success", "Password changed")
+    
+    def logout(self, instance):
+        App.get_running_app().current_user_id = None
+        App.get_running_app().current_username = None
+        self.manager.current = 'login'
+    
+    def on_enter(self):
+        self.build_ui()
+    
+    def show_popup(self, title, message):
+        popup = Popup(title=title, content=Label(text=message), size_hint=(0.7, 0.4))
+        popup.open()
 
 class HomeScreen(Screen):
     def __init__(self, **kwargs):
