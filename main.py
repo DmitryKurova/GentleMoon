@@ -10,6 +10,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.popup import Popup
 from kivy.uix.switch import Switch
 from kivy.uix.widget import Widget
+from kivy.properties import StringProperty
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.metrics import dp
