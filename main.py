@@ -933,15 +933,6 @@ class ReelsScreen(Screen):
         db.cursor.execute('''SELECT r.id, r.caption, r.created_at, u.username 
                               FROM reels r JOIN users u ON r.user_id = u.id 
                               ORDER BY r.created_at DESC''')
-        reels = db.cursor.fetchall()
-        
-        data = []
-        for reel in reels:
-            data.append({
-                'text': f"🎬 {reel[3]}: {reel[1] or 'No caption'}",
-                'time': reel[2][:16]
-            })
-        self.reels_list.data = data
     
     def new_reel(self, instance):
         popup_layout = BoxLayout(orientation='vertical', spacing=10, padding=10)
