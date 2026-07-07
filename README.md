@@ -1,15 +1,9 @@
 # GentleMoon
 # Project leader: Ferlin Ferdinand
-# Staff or member helping: Cyrus Eden Teo, Albert Carey, Izz Dazrin, Afqah, Safiyy Iman
+# Staff or member helping: Cyrus Eden Teo
 # Note: This project does not commit anything illegal
 
 A private social space where forums, messaging, and reels come together—built by students, for everyone.
-
-Part of FINIXCrew Developer Project
-
-What is FINIXCrew Developer?
-
-FINIXCrew Developer is a community of students passionate about coding and collaboration. We build projects together, learn from each other, and create tools that put users first. GentleMoon is one of our flagship projects—proof that students can build meaningful, privacy-respecting alternatives to mainstream social media.
 
 What is GentleMoon?
 
@@ -45,6 +39,4 @@ Community moderation tools
 Join the GentleMoon community.
 
 Experience social media the way it should be—private, simple and built by students who care.
-
-Connect with FINIXCrew Developer
 Learn more about our projects or join the community
