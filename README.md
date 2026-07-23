@@ -1,10 +1,3 @@
-# GentleMoon
-# Project leader: Ferlin Ferdinand
-# Staff or member helping: Cyrus Eden Teo
-# Note: This project does not commit anything illegal
-
-A private social space where forums, messaging, and reels come together—built by students, for everyone.
-
 What is GentleMoon?
 
 GentleMoon is a new kind of social platform. It combines three experiences into one app: community forums, private messaging, and short videos. No ads. No tracking. No hidden agenda. Just a simple, private space to connect—built by students who believe your data belongs to you.
